@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset='UTF-8'>
+<title>Bar Chart</title>
+<script src='js/d3.v5.min.js'></script>
+<script src='js/jquery.min.js'></script>
+<link rel='stylesheet' href='css/init.css'>
+<style>
+    .line {fill:none;}  
+</style>
+    
+</head>
+<body>
+<h1>Line Chart</h1>
+<div id='lineChart' style='width:800px; height:500px;'></div>
+<script>
+var data = [
+  {
+    name: '기술사',
+    values: [
+      {year: '2016', salary: '437227'},
+      {year: '2017', salary: '452611'},
+      {year: '2018', salary: '462072'}
+    ]
+  }, {
+    name: '특급기술자',
+    values: [
+      {year: '2016', salary: '381502'},
+      {year: '2017', salary: '391068'},
+      {year: '2018', salary: '406342'}
+    ]
+  }, {
+    name: '고급기술자',
+    values: [		
+      {year: '2016', salary: '284440'},
+      {year: '2017', salary: '305353'},
+      {year: '2018', salary: '305433'}
+    ]
+  }, {
+    name: '중급기술자',
+    values: [		
+      {year: '2016', salary: '226537'},
+      {year: '2017', salary: '239506'},
+      {year: '2018', salary: '239748'}
+    ]
+  }, {
+    name: '초급기술자',
+    values: [		
+      {year: '2016', salary: '190790'},
+      {year: '2017', salary: '191320'},
+      {year: '2018', salary: '215681'}
+    ]
+  }, {
+    name: '고급기능사',
+    values: [
+      {year: '2016', salary: '187093'},
+      {year: '2017', salary: '191177'},
+      {year: '2018', salary: '194340'}
+    ]
+  }, {
+    name: '중급기능사',
+    values: [		
+      {year: '2016', salary: '147483'},
+      {year: '2017', salary: '158490'},
+      {year: '2018', salary: '158597'}
+    ]
+  }, {
+    name: '초급기능사',
+    values: [
+      {year: '2016', salary: '119232'},
+      {year: '2017', salary: '114914'},
+      {year: '2018', salary: '120948'}
+    ]
+  }, {
+    name: '자료입력원',
+    values: [
+      {year: '2016', salary: '117078'},
+      {year: '2017', salary: '113959'},
+      {year: '2018', salary: '117145'}
+    ]
+  }
+];
+
+var width = 900;
+var height = 700;
+var margin = 50;
+var duration = 250;
+
+var lineOpacity = 0.25;
+var lineOpacityHover = 1;
+var otherLinesOpacityHover = 0.1;
+var lineStroke = '1.5px';
+var lineStrokeHover = '2.5px';
+
+var circleOpacity = 0.85;
+var circleOpacityOnLineHover = 0.25;
+var circleRadius = 3;
+var circleRadiusHover = 6;
+
+
+/* Format Data */
+var parseyear = d3.timeParse('%Y');
+data.forEach(function(d) { 
+  d.values.forEach(function(d) {
+    d.year = parseyear(d.year);
+    d.salary = +d.salary;    
+  });
+});
+
+
+/* Scale */
+var xScale = d3.scaleTime()
+  .domain(d3.extent(data[0].values, function(d) { return d.year; }))
+  .range([0, width-margin]);
+
+var yScale = d3.scaleLinear()
+  .domain([0, d3.max(data[0].values, function(d) { return d.salary; })])
+  .range([height-margin, 0]);
+
+var color = d3.scaleOrdinal(d3.schemeCategory10);
+
+/* Add SVG */
+var svg = d3.select('#lineChart').append('svg')
+  .attr('width', (width+margin)+'px')
+  .attr('height', (height+margin)+'px')
+  .append('g')
+  .attr('transform', `translate(${margin}, ${margin})`);
+
+
+/* Add line into SVG */
+var line = d3.line()
+  .x(function(d) { return xScale(d.year); })
+  .y(function(d) { return yScale(d.salary);});
+
+let lines = svg.append('g')
+  .attr('class', 'lines');
+
+lines.selectAll('.line-group')
+  .data(data).enter()
+  .append('g')
+  .attr('class', 'line-group')  
+  .on('mouseover', function(d, i) {
+      svg.append('text')
+        .attr('class', 'title-text')
+        .style('fill', color(i))        
+        .text(d.name)
+        .attr('text-anchor', 'middle')
+        .attr('x', (width-margin)/2)
+        .attr('y', 5);
+    })
+  .on('mouseout', function(d) {
+      svg.select('.title-text').remove();
+    })
+  .append('path')
+  .attr('class', 'line')  
+  .attr('d', d => line(d.values))
+  .style('stroke', (d, i) => color(i))
+  .style('opacity', lineOpacity)
+  .on('mouseover', function(d) {
+      d3.selectAll('.line')
+					.style('opacity', otherLinesOpacityHover);
+      d3.selectAll('.circle')
+					.style('opacity', circleOpacityOnLineHover);
+      d3.select(this)
+        .style('opacity', lineOpacityHover)
+        .style('stroke-width', lineStrokeHover)
+        .style('cursor', 'pointer');
+    })
+  .on('mouseout', function(d) {
+      d3.selectAll('.line')
+					.style('opacity', lineOpacity);
+      d3.selectAll('.circle')
+					.style('opacity', circleOpacity);
+      d3.select(this)
+        .style('stroke-width', lineStroke)
+        .style('cursor', 'none');
+    });
+
+
+/* Add circles in the line */
+lines.selectAll('circle-group')
+  .data(data).enter()
+  .append('g')
+  .style('fill', (d, i) => color(i))
+  .selectAll('circle')
+  .data(d => d.values).enter()
+  .append('g')
+  .attr('class', 'circle')  
+  .on('mouseover', function(d) {
+      d3.select(this)     
+        .style('cursor', 'pointer')
+        .append('text')
+        .attr('class', 'text')
+        .text(d.salary)
+        .attr('x', d => xScale(d.year) + 5)
+        .attr('y', d => yScale(d.salary) - 10);
+    })
+  .on('mouseout', function(d) {
+      d3.select(this)
+        .style('cursor', 'none')  
+        .transition()
+        .duration(duration)
+        .selectAll('.text').remove();
+    })
+  .append('circle')
+  .attr('cx', d => xScale(d.year))
+  .attr('cy', d => yScale(d.salary))
+  .attr('r', circleRadius)
+  .style('opacity', circleOpacity)
+  .on('mouseover', function(d) {
+        d3.select(this)
+          .transition()
+          .duration(duration)
+          .attr('r', circleRadiusHover);
+      })
+    .on('mouseout', function(d) {
+        d3.select(this) 
+          .transition()
+          .duration(duration)
+          .attr('r', circleRadius);  
+      });
+
+
+/* Add Axis into SVG */
+var xAxis = d3.axisBottom(xScale).ticks(3);
+var yAxis = d3.axisLeft(yScale).ticks(5);
+
+svg.append('g')
+  .attr('class', 'x axis')
+  .attr('transform', `translate(0, ${height-margin})`)
+  .call(xAxis);
+
+svg.append('g')
+  .attr('class', 'y axis')
+  .call(yAxis)
+  .append('text')
+  .attr('y', 15)
+  .attr('transform', 'rotate(-90)')
+  .attr('fill', '#000')
+  .text('Total values');
+</script>
+</body>
+</html>
